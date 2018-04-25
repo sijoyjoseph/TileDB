@@ -10,6 +10,7 @@
 #include "tiledb/sm/global_state/watchdog.h"
 #include "tiledb/sm/misc/constants.h"
 #include "tiledb/sm/misc/logger.h"
+#include "global_state.h"
 
 namespace tiledb {
 namespace sm {
@@ -44,6 +45,9 @@ void Watchdog::watchdog_thread(Watchdog* watchdog) {
 
     if (SignalHandlers::signal_received()) {
       std::cerr << "Watchdog: got signal" << std::endl;
+      for (auto *sm : globalState.storage_managers()) {
+        sm->cancel_all_tasks();
+      }
     }
 
     if (watchdog->should_exit_) {
