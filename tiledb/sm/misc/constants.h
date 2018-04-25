@@ -405,6 +405,9 @@ extern const char* hdfs_username;
 /** Prefix indicating a special name reserved by TileDB. */
 extern const char* special_name_prefix;
 
+/** Number of milliseconds between watchdog thread wakeups. */
+extern const unsigned watchdog_thread_sleep_ms;
+
 }  // namespace constants
 
 }  // namespace sm
