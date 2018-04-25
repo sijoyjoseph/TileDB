@@ -39,6 +39,7 @@
 
 namespace tiledb {
 namespace sm {
+namespace global_state {
 
 /**
  * Singleton class containing various global TileDB state.
@@ -70,6 +71,7 @@ class GlobalState {
 /** Singleton GlobalState instance. */
 extern GlobalState globalState;
 
+}  // namespace global_state
 }  // namespace sm
 }  // namespace tiledb
 

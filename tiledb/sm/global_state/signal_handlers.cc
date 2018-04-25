@@ -46,6 +46,7 @@
 
 namespace tiledb {
 namespace sm {
+namespace global_state {
 
 /* ********************************* */
 /*          Global variables         */
@@ -61,7 +62,8 @@ std::atomic_bool signal_received(false);
 
 bool SignalHandlers::signal_received() {
   bool test = true;
-  return tiledb::sm::signal_received.compare_exchange_weak(test, false);
+  return tiledb::sm::global_state::signal_received.compare_exchange_weak(
+      test, false);
 }
 
 #ifdef _WIN32
@@ -105,5 +107,6 @@ void SignalHandlers::safe_stderr(const char* msg, size_t msg_len) {
 
 #endif
 
+}  // namespace global_state
 }  // namespace sm
 }  // namespace tiledb

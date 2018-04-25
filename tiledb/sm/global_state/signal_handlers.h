@@ -37,6 +37,7 @@
 
 namespace tiledb {
 namespace sm {
+namespace global_state {
 
 /**
  * Singleton class that manages process-level signals and signal handlers.
@@ -70,6 +71,7 @@ extern SignalHandlers globalSignalHandlers;
 /** Global signalling flag. */
 extern std::atomic_bool signal_received;
 
+}  // namespace global_state
 }  // namespace sm
 }  // namespace tiledb
 

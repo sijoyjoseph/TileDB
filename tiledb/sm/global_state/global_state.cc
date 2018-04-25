@@ -34,6 +34,7 @@
 
 namespace tiledb {
 namespace sm {
+namespace global_state {
 
 GlobalState globalState;
 
@@ -48,6 +49,6 @@ void GlobalState::unregister_storage_manager(StorageManager* sm) {
 const std::set<StorageManager*>& GlobalState::storage_managers() const {
   return storage_managers_;
 }
-
+}  // namespace global_state
 }  // namespace sm
 }  // namespace tiledb

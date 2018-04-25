@@ -37,6 +37,7 @@
 
 namespace tiledb {
 namespace sm {
+namespace global_state {
 
 /**
  * Singleton class that watches for global events and performs actions based on
@@ -70,6 +71,7 @@ class Watchdog {
 /** Singleton Watchdog instance. */
 extern Watchdog globalWatchdog;
 
+}  // namespace global_state
 }  // namespace sm
 }  // namespace tiledb
 

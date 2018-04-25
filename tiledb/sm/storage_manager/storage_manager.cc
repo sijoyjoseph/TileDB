@@ -65,7 +65,7 @@ StorageManager::StorageManager() {
 }
 
 StorageManager::~StorageManager() {
-  globalState.unregister_storage_manager(this);
+  global_state::globalState.unregister_storage_manager(this);
 
   async_stop();
   delete async_thread_;
@@ -527,7 +527,7 @@ Status StorageManager::init(Config* config) {
   vfs_ = new VFS();
   RETURN_NOT_OK(vfs_->init(config_.vfs_params()));
 
-  globalState.register_storage_manager(this);
+  global_state::globalState.register_storage_manager(this);
 
   return Status::Ok();
 }
