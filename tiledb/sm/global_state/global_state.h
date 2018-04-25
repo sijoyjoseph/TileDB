@@ -47,6 +47,10 @@ namespace global_state {
 class GlobalState {
  public:
   /**
+   * Returns a reference to the singleton GlobalState instance. */
+  static GlobalState& GetGlobalState();
+
+  /**
    * Register the given StorageManger instance.
    * @param sm The StorageManager
    */
@@ -66,10 +70,10 @@ class GlobalState {
  private:
   /** Set of currently active StorageManager instances. */
   std::set<StorageManager*> storage_managers_;
-};
 
-/** Singleton GlobalState instance. */
-extern GlobalState globalState;
+  /** Constructor. */
+  GlobalState();
+};
 
 }  // namespace global_state
 }  // namespace sm

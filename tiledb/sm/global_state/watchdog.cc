@@ -46,7 +46,7 @@ void Watchdog::watchdog_thread(Watchdog* watchdog) {
 
     if (SignalHandlers::signal_received()) {
       std::cerr << "Watchdog: got signal" << std::endl;
-      for (auto* sm : globalState.storage_managers()) {
+      for (auto* sm : GlobalState::GetGlobalState().storage_managers()) {
         sm->cancel_all_tasks();
       }
     }

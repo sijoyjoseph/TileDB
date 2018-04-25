@@ -36,7 +36,14 @@ namespace tiledb {
 namespace sm {
 namespace global_state {
 
-GlobalState globalState;
+GlobalState& GlobalState::GetGlobalState() {
+  // This is thread-safe in C++11.
+  static GlobalState globalState;
+  return globalState;
+}
+
+GlobalState::GlobalState() {
+}
 
 void GlobalState::register_storage_manager(StorageManager* sm) {
   storage_managers_.insert(sm);
