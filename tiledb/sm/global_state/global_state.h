@@ -63,13 +63,16 @@ class GlobalState {
   void unregister_storage_manager(StorageManager* sm);
 
   /**
-   * Returns the set of registered StorageManager instances.
+   * Returns a copy of the set of registered StorageManager instances.
    */
-  const std::set<StorageManager*>& storage_managers() const;
+  std::set<StorageManager*> storage_managers();
 
  private:
   /** Set of currently active StorageManager instances. */
   std::set<StorageManager*> storage_managers_;
+
+  /** Mutex protecting list of StorageManagers. */
+  std::mutex storage_managers_mtx_;
 
   /** Constructor. */
   GlobalState();

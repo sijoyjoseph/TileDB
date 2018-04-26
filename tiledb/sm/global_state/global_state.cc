@@ -46,14 +46,17 @@ GlobalState::GlobalState() {
 }
 
 void GlobalState::register_storage_manager(StorageManager* sm) {
+  std::unique_lock<std::mutex> lck(storage_managers_mtx_);
   storage_managers_.insert(sm);
 }
 
 void GlobalState::unregister_storage_manager(StorageManager* sm) {
+  std::unique_lock<std::mutex> lck(storage_managers_mtx_);
   storage_managers_.erase(sm);
 }
 
-const std::set<StorageManager*>& GlobalState::storage_managers() const {
+std::set<StorageManager*> GlobalState::storage_managers() {
+  std::unique_lock<std::mutex> lck(storage_managers_mtx_);
   return storage_managers_;
 }
 }  // namespace global_state
