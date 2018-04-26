@@ -236,8 +236,7 @@ Status Config::unset(const std::string& param) {
     param_values_["sm.fragment_metadata_cache_size"] = value.str();
     value.str(std::string());
   } else if (param == "sm.number_of_threads") {
-    sm_params_.number_of_threads_ =
-        constants::number_of_threads;
+    sm_params_.number_of_threads_ = constants::number_of_threads;
     value << sm_params_.number_of_threads_;
     param_values_["sm.number_of_threads"] = value.str();
     value.str(std::string());
