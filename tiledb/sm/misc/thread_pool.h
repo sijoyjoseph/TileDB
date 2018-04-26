@@ -61,8 +61,10 @@ class ThreadPool {
   ~ThreadPool();
 
   /**
-   * Cancel all queued tasks (causing them to return error statuses).
-   * This does not terminate the threads.
+   * Cancel all queued tasks, causing them to return error statuses.
+   * This does not terminate the threads. Cancelled tasks are guaranteed not to
+   * begin execution of their tasks, as currently running tasks are not able to
+   * be cancelled (only queued tasks).
    */
   void cancel_all_tasks();
 
@@ -77,6 +79,8 @@ class ThreadPool {
   /**
    * Enqueue a new task to be executed by a thread with a custom callback
    * made if the task is cancelled before it can execute.
+   *
+   * Note: the on_cancel callback is made from a thread in the pool.
    *
    * @param function Task function to execute.
    * @param on_cancel Cancellation callback function to make on cancel.

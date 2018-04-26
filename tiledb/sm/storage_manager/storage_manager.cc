@@ -400,12 +400,20 @@ Status StorageManager::object_unlock(const URI& uri, LockType lock_type) {
 }
 
 Status StorageManager::async_push_query(Query* query) {
-  thread_pool_->enqueue([query]() {
-    Status st = query->process();
-    if (!st.ok())
-      LOG_STATUS(st);
-    return st;
-  });
+  thread_pool_->enqueue(
+      [query]() {
+        // Process query.
+        Status st = query->process();
+        if (!st.ok())
+          LOG_STATUS(st);
+        return st;
+      },
+      [query]() {
+        // Task was cancelled. This is safe to perform in a separate thread,
+        // as we are guaranteed by the thread pool not to have entered
+        // query->process() yet.
+        query->cancel();
+      });
 
   return Status::Ok();
 }

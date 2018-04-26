@@ -401,6 +401,9 @@ class Query {
   /** Returns the array schema.*/
   const ArraySchema* array_schema() const;
 
+  /** Cancels a query, marking it as failed. */
+  Status cancel();
+
   /** Processes a query. */
   Status process();
 
