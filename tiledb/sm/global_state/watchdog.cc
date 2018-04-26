@@ -42,17 +42,14 @@ void Watchdog::watchdog_thread(Watchdog* watchdog) {
     std::unique_lock<std::mutex> lck(watchdog->mtx_);
     watchdog->cv_.wait_for(
         lck, std::chrono::milliseconds(constants::watchdog_thread_sleep_ms));
-    std::cerr << "Watchdog awake" << std::endl;
 
     if (SignalHandlers::signal_received()) {
-      std::cerr << "Watchdog: got signal" << std::endl;
       for (auto* sm : GlobalState::GetGlobalState().storage_managers()) {
         sm->cancel_all_tasks();
       }
     }
 
     if (watchdog->should_exit_) {
-      std::cerr << "Normal watchdog termination" << std::endl;
       break;
     }
   }
