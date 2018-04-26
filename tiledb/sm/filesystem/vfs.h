@@ -221,7 +221,25 @@ class VFS {
    */
   Status is_empty_bucket(const URI& uri, bool* is_empty) const;
 
-  /** Initializes the virtual filesystem. */
+  /**
+   * Initializes the virtual filesystem with the given configuration and a
+   * shared thread pool.
+   *
+   * @param vfs_params VFS Configuration
+   * @param thread_pool Thread pool to use for VFS tasks.
+   * @return Status
+   */
+  Status init(
+      const Config::VFSParams& vfs_params,
+      std::shared_ptr<ThreadPool> thread_pool);
+
+  /**
+   * Initializes the virtual filesystem with the given configuration and a
+   * private thread pool.
+   *
+   * @param vfs_params VFS Configuration
+   * @return Status
+   */
   Status init(const Config::VFSParams& vfs_params);
 
   /**
@@ -332,7 +350,7 @@ class VFS {
   std::set<Filesystem> supported_fs_;
 
   /** Thread pool for parallel I/O operations. */
-  std::unique_ptr<ThreadPool> thread_pool_;
+  std::shared_ptr<ThreadPool> thread_pool_;
 
   /**
    * Reads from a file by calling the specific backend read function.

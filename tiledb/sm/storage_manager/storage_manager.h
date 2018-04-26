@@ -49,6 +49,7 @@
 #include "tiledb/sm/enums/walk_order.h"
 #include "tiledb/sm/filesystem/vfs.h"
 #include "tiledb/sm/misc/status.h"
+#include "tiledb/sm/misc/thread_pool.h"
 #include "tiledb/sm/misc/uri.h"
 #include "tiledb/sm/query/query.h"
 #include "tiledb/sm/storage_manager/config.h"
@@ -594,6 +595,9 @@ class StorageManager {
    * initialized via *query_init* for a particular array.
    */
   std::map<std::string, OpenArray*> open_arrays_;
+
+  /** The storage manager's thread pool. */
+  std::shared_ptr<ThreadPool> thread_pool_;
 
   /** A tile cache. */
   LRUCache* tile_cache_;

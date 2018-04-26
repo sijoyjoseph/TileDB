@@ -208,6 +208,9 @@ const uint64_t array_schema_cache_size = 10000000;
 /** The fragment metadata cache size. */
 const uint64_t fragment_metadata_cache_size = 10000000;
 
+/** The number of threads allocated per StorageManager. */
+const uint64_t number_of_threads = std::thread::hardware_concurrency();
+
 /** The tile cache size. */
 const uint64_t tile_cache_size = 10000000;
 

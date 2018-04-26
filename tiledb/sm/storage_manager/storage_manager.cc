@@ -522,10 +522,12 @@ Status StorageManager::init(Config* config) {
   array_schema_cache_ = new LRUCache(sm_params.array_schema_cache_size_);
   fragment_metadata_cache_ =
       new LRUCache(sm_params.fragment_metadata_cache_size_);
+  thread_pool_ =
+      std::shared_ptr<ThreadPool>(new ThreadPool(sm_params.number_of_threads_));
   tile_cache_ = new LRUCache(sm_params.tile_cache_size_);
   async_thread_ = new std::thread(async_start, this);
   vfs_ = new VFS();
-  RETURN_NOT_OK(vfs_->init(config_.vfs_params()));
+  RETURN_NOT_OK(vfs_->init(config_.vfs_params(), thread_pool_));
 
   global_state::GlobalState::GetGlobalState().register_storage_manager(this);
 

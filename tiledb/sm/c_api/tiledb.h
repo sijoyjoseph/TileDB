@@ -345,6 +345,9 @@ TILEDB_EXPORT int tiledb_config_free(tiledb_config_t** config);
  *    The fragment metadata cache size in bytes. Any `uint64_t` value is
  *    acceptable. <br>
  *    **Default**: 10,000,000
+ * - `sm.number_of_threads` <br>
+ *    The number of allocated threads per TileDB context. <br>
+ *    **Default**: number of cores
  * - `vfs.max_parallel_ops` <br>
  *    The maximum number of VFS parallel operations. <br>
  *    **Default**: number of cores

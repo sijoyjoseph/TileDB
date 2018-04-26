@@ -196,6 +196,9 @@ extern const uint64_t array_schema_cache_size;
 /** The fragment metadata cache size. */
 extern const uint64_t fragment_metadata_cache_size;
 
+/** The number of threads allocated per StorageManager. */
+extern const uint64_t number_of_threads;
+
 /** The tile cache size. */
 extern const uint64_t tile_cache_size;
 

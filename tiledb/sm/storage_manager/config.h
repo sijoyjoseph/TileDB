@@ -53,11 +53,13 @@ class Config {
   struct SMParams {
     uint64_t array_schema_cache_size_;
     uint64_t fragment_metadata_cache_size_;
+    uint64_t number_of_threads_;
     uint64_t tile_cache_size_;
 
     SMParams() {
       array_schema_cache_size_ = constants::array_schema_cache_size;
       fragment_metadata_cache_size_ = constants::fragment_metadata_cache_size;
+      number_of_threads_ = constants::number_of_threads;
       tile_cache_size_ = constants::tile_cache_size;
     }
   };
@@ -157,6 +159,9 @@ class Config {
    *    The fragment metadata cache size in bytes. Any `uint64_t` value is
    *    acceptable. <br>
    *    **Default**: 10,000,000
+   * - `sm.number_of_threads` <br>
+   *    The number of allocated threads per TileDB context. <br>
+   *    **Default**: number of cores
    * - `vfs.max_parallel_ops` <br>
    *    The maximum number of VFS parallel operations.<br>
    *    **Default**: number of cores
@@ -262,6 +267,9 @@ class Config {
 
   /** Sets the fragment metadata cache size, properly parsing the input value.*/
   Status set_sm_fragment_metadata_cache_size(const std::string& value);
+
+  /** Sets the number of threads, properly parsing the input value.*/
+  Status set_sm_number_of_threads(const std::string& value);
 
   /** Sets the tile cache size, properly parsing the input value. */
   Status set_sm_tile_cache_size(const std::string& value);
