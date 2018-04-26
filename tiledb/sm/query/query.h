@@ -401,7 +401,12 @@ class Query {
   /** Returns the array schema.*/
   const ArraySchema* array_schema() const;
 
-  /** Cancels a query, marking it as failed. */
+  /**
+   * Marks a query that has not yet been started as failed. This should not be
+   * called asynchronously to cancel an in-progress query; for that use the
+   * parent StorageManager's cancellation mechanism.
+   * @return Status
+   */
   Status cancel();
 
   /** Processes a query. */
