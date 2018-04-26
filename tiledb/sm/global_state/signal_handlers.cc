@@ -110,7 +110,9 @@ SignalHandlers::SignalHandlers() {
 }
 
 void SignalHandlers::safe_stderr(const char* msg, size_t msg_len) {
-  write(2, msg, msg_len);
+  auto retval = write(2, msg, msg_len);
+  // Ignore return value.
+  (void)retval;
 }
 
 #endif
