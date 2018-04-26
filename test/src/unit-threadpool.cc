@@ -141,9 +141,7 @@ TEST_CASE("ThreadPool: Test pending task cancellation", "[threadpool]") {
             result++;
             return Status::Ok();
           },
-          [&num_cancelled]() {
-            num_cancelled++;
-          }));
+          [&num_cancelled]() { num_cancelled++; }));
     }
 
     // Because the thread pool has 2 threads, the first two will probably be
