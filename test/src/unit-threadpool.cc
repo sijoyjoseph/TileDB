@@ -99,3 +99,30 @@ TEST_CASE("ThreadPool: Test no wait", "[threadpool]") {
     // outstanding tasks, but everything should still complete.
   }
 }
+
+TEST_CASE("ThreadPool: Test pending task cancellation", "[threadpool]") {
+  ThreadPool pool(2);
+  std::atomic<int> result(0);
+  std::vector<std::future<Status>> tasks;
+
+  for (int i = 0; i < 5; i++) {
+    tasks.push_back(pool.enqueue([&result]() {
+      std::this_thread::sleep_for(std::chrono::seconds(2));
+      result++;
+      return Status::Ok();
+    }));
+  }
+
+  // Because the thread pool has 2 threads, the first two will probably be
+  // executing at this point, but some will still be queued.
+  pool.cancel_all_tasks();
+
+  // The result is the number of threads that returned Ok (were not cancelled).
+  std::vector<Status> statuses = pool.wait_all_status(tasks);
+  int num_ok = 0;
+  for (const auto& st : statuses) {
+    num_ok += st.ok() ? 1 : 0;
+  }
+
+  CHECK(result == num_ok);
+}

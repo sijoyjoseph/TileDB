@@ -61,6 +61,12 @@ class ThreadPool {
   ~ThreadPool();
 
   /**
+   * Cancel all queued tasks (causing them to return error statuses).
+   * This does not terminate the threads.
+   */
+  void cancel_all_tasks();
+
+  /**
    * Enqueue a new task to be executed by a thread.
    *
    * @param function Task function to execute.
@@ -79,14 +85,25 @@ class ThreadPool {
    */
   bool wait_all(std::vector<std::future<Status>>& tasks);
 
+  /**
+   * Wait on all the given tasks to complete, return a vector of their return
+   * Status.
+   *
+   * @param tasks Task list to wait on
+   * @return Vector of each task's Status.
+   */
+  std::vector<Status> wait_all_status(std::vector<std::future<Status>>& tasks);
+
  private:
   std::mutex queue_mutex_;
 
   std::condition_variable queue_cv_;
 
+  bool should_cancel_;
+
   bool should_terminate_;
 
-  std::queue<std::packaged_task<Status()>> task_queue_;
+  std::queue<std::packaged_task<Status(bool)>> task_queue_;
 
   std::vector<std::thread> threads_;
 
