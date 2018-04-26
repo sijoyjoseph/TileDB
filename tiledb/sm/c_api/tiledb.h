@@ -756,6 +756,14 @@ TILEDB_EXPORT int tiledb_ctx_get_last_error(
 TILEDB_EXPORT int tiledb_ctx_is_supported_fs(
     tiledb_ctx_t* ctx, tiledb_filesystem_t fs, int* is_supported);
 
+/**
+ * Cancels all background or async tasks associated with the given context.
+ *
+ * @param ctx The TileDB context.
+ * @return `TILEDB_OK` for success and `TILEDB_ERR` for error.
+ */
+TILEDB_EXPORT int tiledb_ctx_cancel_tasks(tiledb_ctx_t* ctx);
+
 /* ********************************* */
 /*                GROUP              */
 /* ********************************* */

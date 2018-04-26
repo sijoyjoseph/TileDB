@@ -17,6 +17,7 @@
 * Refactored dense ordered writes, making them simpler and more amenable to parallelization.
 * Refactored unordered writes, making them simpler and more amenable to parallelization.
 * Refactored global writes, making them simpler and more amenable to parallelization.
+* Added ability to cancel pending background/async tasks.
 
 ## Bug Fixes
 
@@ -35,6 +36,7 @@
 * Added `tiledb_vfs_get_config` function.
 * Added `vfs.max_parallel_ops` and `vfs.min_parallel_size` config parameters.
 * Added `vfs.s3.multipart_part_size` config parameter.
+* Added `tiledb_ctx_cancel_tasks` function.
 
 ### C++ API
 * Support for trivially copyable objects, such as a custom data struct, was added. They will be backed by an `sizeof(T)` sized `char` attribute.
@@ -43,6 +45,7 @@
 * Added a `Dimension::create` factory function that does not take tile extent,
   which sets the tile extent to `NULL`.
 * Added `Query::finalize()` function.
+* Added `Context::cancel_tasks()` function.
 
 ## Breaking changes
 
