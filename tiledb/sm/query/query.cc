@@ -54,13 +54,46 @@
  * Returns an error status if the given Status is not Status::Ok, or
  * if the StorageManager that owns this Query has requested cancellation.
  */
-#define RETURN_CANCEL_NOT_OK(s)                                \
+#define RETURN_CANCEL_OR_ERROR(s)                              \
   do {                                                         \
     Status _s = (s);                                           \
     if (!_s.ok()) {                                            \
       return _s;                                               \
     } else if (storage_manager_->cancellation_in_progress()) { \
       return Status::QueryError("Query cancelled.");           \
+    }                                                          \
+  } while (false)
+
+/**
+ * Returns an error status if the given Status is not Status::Ok, or
+ * if the StorageManager that owns this Query has requested cancellation.
+ * If an error status is returned, also execute the 'else' code.
+ */
+#define RETURN_CANCEL_OR_ERROR_ELSE(s, _else)                  \
+  do {                                                         \
+    Status _s = (s);                                           \
+    if (!_s.ok()) {                                            \
+      _else;                                                   \
+      return _s;                                               \
+    } else if (storage_manager_->cancellation_in_progress()) { \
+      _else;                                                   \
+      return Status::QueryError("Query cancelled.");           \
+    }                                                          \
+  } while (false)
+
+/**
+ * If the given status 's' is not Status::Ok, sets the Status variable
+ * 'outer_st' to 's' and breaks the containing loop.
+ */
+#define BREAK_CANCEL_OR_ERROR(outer_st, s)                     \
+  do {                                                         \
+    Status _s = (s);                                           \
+    if (!_s.ok()) {                                            \
+      outer_st = _s;                                           \
+      break;                                                   \
+    } else if (storage_manager_->cancellation_in_progress()) { \
+      outer_st = Status::QueryError("Query cancelled.");       \
+      break;                                                   \
     }                                                          \
   } while (false)
 
@@ -419,24 +452,24 @@ Status Query::dense_read() {
 
   // Get overlapping sparse tile indexes
   OverlappingTileVec sparse_tiles;
-  RETURN_CANCEL_NOT_OK(compute_overlapping_tiles<T>(&sparse_tiles));
+  RETURN_CANCEL_OR_ERROR(compute_overlapping_tiles<T>(&sparse_tiles));
 
   // Read sparse tiles
-  RETURN_CANCEL_NOT_OK(read_tiles(constants::coords, &sparse_tiles));
+  RETURN_CANCEL_OR_ERROR(read_tiles(constants::coords, &sparse_tiles));
   for (const auto& attr : attributes_) {
     if (attr != constants::coords)
-      RETURN_CANCEL_NOT_OK(read_tiles(attr, &sparse_tiles));
+      RETURN_CANCEL_OR_ERROR(read_tiles(attr, &sparse_tiles));
   }
 
   // Compute the read coordinates for all sparse fragments
   std::list<std::shared_ptr<OverlappingCoords<T>>> coords;
-  RETURN_CANCEL_NOT_OK(compute_overlapping_coords<T>(sparse_tiles, &coords));
+  RETURN_CANCEL_OR_ERROR(compute_overlapping_coords<T>(sparse_tiles, &coords));
 
   // Sort and dedup the coordinates (not applicable to the global order
   // layout for a single fragment)
   if (!(fragment_metadata_.size() == 1 && layout_ == Layout::GLOBAL_ORDER)) {
-    RETURN_CANCEL_NOT_OK(sort_coords<T>(&coords));
-    RETURN_CANCEL_NOT_OK(dedup_coords<T>(&coords));
+    RETURN_CANCEL_OR_ERROR(sort_coords<T>(&coords));
+    RETURN_CANCEL_OR_ERROR(dedup_coords<T>(&coords));
   }
 
   // For each tile, initialize a dense cell range iterator per
@@ -444,17 +477,17 @@ Status Query::dense_read() {
   std::vector<std::vector<DenseCellRangeIter<T>>> dense_frag_its;
   std::unordered_map<uint64_t, std::pair<uint64_t, std::vector<T>>>
       overlapping_tile_idx_coords;
-  RETURN_CANCEL_NOT_OK(init_tile_fragment_dense_cell_range_iters(
+  RETURN_CANCEL_OR_ERROR(init_tile_fragment_dense_cell_range_iters(
       &dense_frag_its, &overlapping_tile_idx_coords));
 
   // Get the cell ranges
   std::list<DenseCellRange<T>> dense_cell_ranges;
   DenseCellRangeIter<T> it(domain, subarray, layout_);
-  RETURN_CANCEL_NOT_OK(it.begin());
+  RETURN_CANCEL_OR_ERROR(it.begin());
   while (!it.end()) {
     auto o_it = overlapping_tile_idx_coords.find(it.tile_idx());
     assert(o_it != overlapping_tile_idx_coords.end());
-    RETURN_CANCEL_NOT_OK(compute_dense_cell_ranges<T>(
+    RETURN_CANCEL_OR_ERROR(compute_dense_cell_ranges<T>(
         &(o_it->second.second)[0],
         dense_frag_its[o_it->second.first],
         it.range_start(),
@@ -466,7 +499,7 @@ Status Query::dense_read() {
   // Compute overlapping dense tile indexes
   OverlappingTileVec dense_tiles;
   OverlappingCellRangeList overlapping_cell_ranges;
-  RETURN_CANCEL_NOT_OK(compute_dense_overlapping_tiles_and_cell_ranges<T>(
+  RETURN_CANCEL_OR_ERROR(compute_dense_overlapping_tiles_and_cell_ranges<T>(
       dense_cell_ranges, coords, &dense_tiles, &overlapping_cell_ranges));
   coords.clear();
   dense_cell_ranges.clear();
@@ -474,11 +507,11 @@ Status Query::dense_read() {
 
   // Read dense tiles
   for (const auto& attr : attributes_)
-    RETURN_CANCEL_NOT_OK(read_tiles(attr, &dense_tiles));
+    RETURN_CANCEL_OR_ERROR(read_tiles(attr, &dense_tiles));
 
   // Copy cells
   for (const auto& attr : attributes_)
-    RETURN_CANCEL_NOT_OK(copy_cells(attr, overlapping_cell_ranges));
+    RETURN_CANCEL_OR_ERROR(copy_cells(attr, overlapping_cell_ranges));
 
   return Status::Ok();
 }
@@ -518,34 +551,34 @@ template <class T>
 Status Query::sparse_read() {
   // Get overlapping tile indexes
   OverlappingTileVec tiles;
-  RETURN_CANCEL_NOT_OK(compute_overlapping_tiles<T>(&tiles));
+  RETURN_CANCEL_OR_ERROR(compute_overlapping_tiles<T>(&tiles));
 
   // Read tiles
-  RETURN_CANCEL_NOT_OK(read_tiles(constants::coords, &tiles));
+  RETURN_CANCEL_OR_ERROR(read_tiles(constants::coords, &tiles));
   for (const auto& attr : attributes_) {
     if (attr != constants::coords)
-      RETURN_CANCEL_NOT_OK(read_tiles(attr, &tiles));
+      RETURN_CANCEL_OR_ERROR(read_tiles(attr, &tiles));
   }
 
   // Compute the read coordinates for all fragments
   std::list<std::shared_ptr<OverlappingCoords<T>>> coords;
-  RETURN_CANCEL_NOT_OK(compute_overlapping_coords<T>(tiles, &coords));
+  RETURN_CANCEL_OR_ERROR(compute_overlapping_coords<T>(tiles, &coords));
 
   // Sort and dedup the coordinates (not applicable to the global order
   // layout for a single fragment)
   if (!(fragment_metadata_.size() == 1 && layout_ == Layout::GLOBAL_ORDER)) {
-    RETURN_CANCEL_NOT_OK(sort_coords<T>(&coords));
-    RETURN_CANCEL_NOT_OK(dedup_coords<T>(&coords));
+    RETURN_CANCEL_OR_ERROR(sort_coords<T>(&coords));
+    RETURN_CANCEL_OR_ERROR(dedup_coords<T>(&coords));
   }
 
   // Compute the maximal cell ranges
   OverlappingCellRangeList cell_ranges;
-  RETURN_CANCEL_NOT_OK(compute_cell_ranges(coords, &cell_ranges));
+  RETURN_CANCEL_OR_ERROR(compute_cell_ranges(coords, &cell_ranges));
   coords.clear();
 
   // Copy cells
   for (const auto& attr : attributes_)
-    RETURN_CANCEL_NOT_OK(copy_cells(attr, cell_ranges));
+    RETURN_CANCEL_OR_ERROR(copy_cells(attr, cell_ranges));
 
   return Status::Ok();
 }
@@ -1208,9 +1241,10 @@ Status Query::set_layout(Layout layout) {
   // Ordered layout for writes in sparse arrays is meaningless
   if (type_ == QueryType::WRITE && !array_schema_->dense() &&
       (layout == Layout::COL_MAJOR || layout == Layout::ROW_MAJOR))
-    return LOG_STATUS(Status::QueryError(
-        "Cannot set layout; Ordered layouts can be used when writing to sparse "
-        "arrays - use UNORDERED instead"));
+    return LOG_STATUS(
+        Status::QueryError("Cannot set layout; Ordered layouts can be used "
+                           "when writing to sparse "
+                           "arrays - use UNORDERED instead"));
 
   // Layout for 1D vectors should not be col-major
   // Use the equivalent row-major
@@ -1404,9 +1438,10 @@ Status Query::check_subarray(const T* subarray) const {
       auto norm_2 = (subarray[2 * i + 1] - dim_domain[0]) + 1;
       if ((norm_1 / (*tile_extent) * (*tile_extent) != norm_1) ||
           (norm_2 / (*tile_extent) * (*tile_extent) != norm_2)) {
-        return LOG_STATUS(Status::QueryError(
-            "Invalid subarray; In global writes for dense arrays, the subarray "
-            "must coincide with the tile bounds"));
+        return LOG_STATUS(
+            Status::QueryError("Invalid subarray; In global writes for dense "
+                               "arrays, the subarray "
+                               "must coincide with the tile bounds"));
       }
     }
   }
@@ -1807,7 +1842,7 @@ template <class T>
 Status Query::global_write() {
   // Initialize the global write state if this is the first invocation
   if (!global_write_state_)
-    RETURN_NOT_OK(init_global_write_state());
+    RETURN_CANCEL_OR_ERROR(init_global_write_state());
   auto frag_meta = global_write_state_->frag_meta_.get();
   auto uri = frag_meta->fragment_uri();
 
@@ -1815,19 +1850,14 @@ Status Query::global_write() {
   auto st = Status::Ok();
   for (const auto& attr : attributes_) {
     std::vector<Tile> full_tiles;
-    st = prepare_full_tiles(attr, &full_tiles);
-    if (!st.ok())
-      break;
+    BREAK_CANCEL_OR_ERROR(st, prepare_full_tiles(attr, &full_tiles));
 
     if (attr == constants::coords) {
-      st = compute_coords_metadata<T>(full_tiles, frag_meta);
-      if (!st.ok())
-        break;
+      BREAK_CANCEL_OR_ERROR(
+          st, compute_coords_metadata<T>(full_tiles, frag_meta));
     }
 
-    st = write_tiles(attr, frag_meta, full_tiles);
-    if (!st.ok())
-      break;
+    BREAK_CANCEL_OR_ERROR(st, write_tiles(attr, frag_meta, full_tiles));
   }
 
   if (!st.ok()) {
@@ -1899,30 +1929,30 @@ template <class T>
 Status Query::unordered_write() {
   // Sort coordinates first
   std::vector<uint64_t> cell_pos;
-  RETURN_NOT_OK(sort_coords<T>(&cell_pos));
+  RETURN_CANCEL_OR_ERROR(sort_coords<T>(&cell_pos));
 
   // Create new fragment
   std::shared_ptr<FragmentMetadata> frag_meta;
-  RETURN_NOT_OK(create_fragment(false, &frag_meta));
+  RETURN_CANCEL_OR_ERROR(create_fragment(false, &frag_meta));
   auto uri = frag_meta->fragment_uri();
 
   // Prepare tiles for all attributes and write
   for (const auto& attr : attributes_) {
     std::vector<Tile> tiles;
-    RETURN_NOT_OK_ELSE(
+    RETURN_CANCEL_OR_ERROR_ELSE(
         prepare_tiles(attr, cell_pos, &tiles),
         storage_manager_->vfs()->remove_dir(uri));
     if (attr == constants::coords)
-      RETURN_NOT_OK_ELSE(
+      RETURN_CANCEL_OR_ERROR_ELSE(
           compute_coords_metadata<T>(tiles, frag_meta.get()),
           storage_manager_->vfs()->remove_dir(uri));
-    RETURN_NOT_OK_ELSE(
+    RETURN_CANCEL_OR_ERROR_ELSE(
         write_tiles(attr, frag_meta.get(), tiles),
         storage_manager_->vfs()->remove_dir(uri));
   }
 
   // Write the fragment metadata
-  RETURN_NOT_OK_ELSE(
+  RETURN_CANCEL_OR_ERROR_ELSE(
       storage_manager_->store_fragment_metadata(frag_meta.get()),
       storage_manager_->vfs()->remove_dir(uri));
 
@@ -1975,12 +2005,12 @@ template <class T>
 Status Query::ordered_write() {
   // Create new fragment
   std::shared_ptr<FragmentMetadata> frag_meta;
-  RETURN_NOT_OK(create_fragment(true, &frag_meta));
+  RETURN_CANCEL_OR_ERROR(create_fragment(true, &frag_meta));
   auto uri = frag_meta->fragment_uri();
 
   // Initialize dense cell range iterators for each tile in global order
   std::vector<DenseCellRangeIter<T>> dense_cell_range_its;
-  RETURN_NOT_OK_ELSE(
+  RETURN_CANCEL_OR_ERROR_ELSE(
       init_tile_dense_cell_range_iters<T>(&dense_cell_range_its),
       storage_manager_->vfs()->remove_dir(uri));
   auto tile_num = dense_cell_range_its.size();
@@ -1991,7 +2021,7 @@ Status Query::ordered_write() {
   std::vector<WriteCellRangeVec> write_cell_ranges;
   write_cell_ranges.resize(tile_num);
   for (size_t i = 0; i < tile_num; ++i)
-    RETURN_NOT_OK_ELSE(
+    RETURN_CANCEL_OR_ERROR_ELSE(
         compute_write_cell_ranges<T>(
             &dense_cell_range_its[i], &write_cell_ranges[i]),
         storage_manager_->vfs()->remove_dir(uri));
@@ -2000,16 +2030,16 @@ Status Query::ordered_write() {
   // Prepare tiles for all attributes and write
   for (const auto& attr : attributes_) {
     std::vector<Tile> tiles;
-    RETURN_NOT_OK_ELSE(
+    RETURN_CANCEL_OR_ERROR_ELSE(
         prepare_tiles(attr, write_cell_ranges, &tiles),
         storage_manager_->vfs()->remove_dir(uri));
-    RETURN_NOT_OK_ELSE(
+    RETURN_CANCEL_OR_ERROR_ELSE(
         write_tiles(attr, frag_meta.get(), tiles),
         storage_manager_->vfs()->remove_dir(uri));
   }
 
   // Write the fragment metadata
-  RETURN_NOT_OK_ELSE(
+  RETURN_CANCEL_OR_ERROR_ELSE(
       storage_manager_->store_fragment_metadata(frag_meta.get()),
       storage_manager_->vfs()->remove_dir(uri));
 
