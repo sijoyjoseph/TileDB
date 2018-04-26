@@ -228,10 +228,7 @@ class StorageManager {
   Status group_create(const std::string& group);
 
   /**
-   * Initializes the storage manager. It spawns two threads. The first is for
-   * handling user asynchronous queries (submitted via the *query_submit_async*
-   * function). The second handles internal asynchronous queries as part of some
-   * either sync or async query.
+   * Initializes the storage manager.
    *
    * @param config The configuration parameters.
    * @return Status
@@ -554,21 +551,6 @@ class StorageManager {
   /** Mutex for providing thread-safety upon creating TileDB objects. */
   std::mutex object_create_mtx_;
 
-  /** Async condition variable. */
-  std::condition_variable async_cv_;
-
-  /** If true, the async thread will be eventually terminated. */
-  bool async_done_;
-
-  /** Async query queue. The queries are processed in a FIFO manner. */
-  std::queue<Query*> async_queue_;
-
-  /** Async mutex. */
-  std::mutex async_mtx_;
-
-  /** Thread that handles all async queries. */
-  std::thread* async_thread_;
-
   /** Stores the TileDB configuration parameters. */
   Config config_;
 
@@ -649,23 +631,6 @@ class StorageManager {
    * Invokes in case an error occurs in array_open. It is a clean-up function.
    */
   Status array_open_error(OpenArray* open_array);
-
-  /**
-   * Starts listening to async queries.
-   *
-   * @param storage_manager The storage manager object that handles the
-   *     async query threads.
-   */
-  static void async_start(StorageManager* storage_manager);
-
-  /** Stops listening to async queries. */
-  void async_stop();
-
-  /** Handles a single async query. */
-  void async_process_query(Query* query);
-
-  /** Starts handling async queries. */
-  void async_process_queries();
 
   /** Retrieves all the fragment URI's of an array. */
   Status get_fragment_uris(

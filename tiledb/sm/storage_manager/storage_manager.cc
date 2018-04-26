@@ -55,8 +55,6 @@ namespace sm {
 /* ****************************** */
 
 StorageManager::StorageManager() {
-  async_done_ = false;
-  async_thread_ = nullptr;
   consolidator_ = nullptr;
   array_schema_cache_ = nullptr;
   fragment_metadata_cache_ = nullptr;
@@ -66,9 +64,8 @@ StorageManager::StorageManager() {
 
 StorageManager::~StorageManager() {
   global_state::GlobalState::GetGlobalState().unregister_storage_manager(this);
+  cancel_all_tasks();
 
-  async_stop();
-  delete async_thread_;
   delete array_schema_cache_;
   delete consolidator_;
   delete fragment_metadata_cache_;
@@ -403,19 +400,18 @@ Status StorageManager::object_unlock(const URI& uri, LockType lock_type) {
 }
 
 Status StorageManager::async_push_query(Query* query) {
-  // Push request
-  {
-    std::lock_guard<std::mutex> lock(async_mtx_);
-    async_queue_.emplace(query);
-  }
-
-  // Signal AIO thread
-  async_cv_.notify_one();
+  thread_pool_->enqueue([query]() {
+    Status st = query->process();
+    if (!st.ok())
+      LOG_STATUS(st);
+    return st;
+  });
 
   return Status::Ok();
 }
 
 Status StorageManager::cancel_all_tasks() {
+  thread_pool_->cancel_all_tasks();
   return Status::Ok();
 }
 
@@ -525,7 +521,6 @@ Status StorageManager::init(Config* config) {
   thread_pool_ =
       std::shared_ptr<ThreadPool>(new ThreadPool(sm_params.number_of_threads_));
   tile_cache_ = new LRUCache(sm_params.tile_cache_size_);
-  async_thread_ = new std::thread(async_start, this);
   vfs_ = new VFS();
   RETURN_NOT_OK(vfs_->init(config_.vfs_params(), thread_pool_));
 
@@ -1252,40 +1247,6 @@ Status StorageManager::array_open(
 Status StorageManager::array_open_error(OpenArray* open_array) {
   open_array->mtx_unlock();
   return array_close(open_array->array_uri());
-}
-
-void StorageManager::async_process_query(Query* query) {
-  // For easy reference
-  Status st = query->process();
-  if (!st.ok())
-    LOG_STATUS(st);
-}
-
-void StorageManager::async_process_queries() {
-  while (!async_done_) {
-    std::unique_lock<std::mutex> lock(async_mtx_);
-    async_cv_.wait(
-        lock, [this] { return !async_queue_.empty() || async_done_; });
-    if (async_done_)
-      break;
-    auto query = async_queue_.front();
-    async_queue_.pop();
-    lock.unlock();
-    async_process_query(query);
-  }
-}
-
-void StorageManager::async_start(StorageManager* storage_manager) {
-  storage_manager->async_process_queries();
-}
-
-void StorageManager::async_stop() {
-  if (async_thread_ == nullptr)
-    return;
-
-  async_done_ = true;
-  async_cv_.notify_one();
-  async_thread_->join();
 }
 
 Status StorageManager::get_fragment_uris(
