@@ -561,7 +561,10 @@ class StorageManager {
   LRUCache* array_schema_cache_;
 
   /** Set to true when tasks are being cancelled. */
-  std::atomic_bool cancellation_in_progress_;
+  bool cancellation_in_progress_;
+
+  /** Mutex protecting cancellation_in_progress_. */
+  std::mutex cancellation_in_progress_mtx_;
 
   /** Mutex for providing thread-safety upon creating TileDB objects. */
   std::mutex object_create_mtx_;

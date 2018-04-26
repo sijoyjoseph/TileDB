@@ -421,8 +421,18 @@ Status StorageManager::async_push_query(Query* query) {
 }
 
 Status StorageManager::cancel_all_tasks() {
-  if (!cancellation_in_progress_) {
-    cancellation_in_progress_ = true;
+  // Check if there is already a "cancellation" in progress.
+  bool handle_cancel = false;
+  {
+    std::unique_lock<std::mutex> lck(cancellation_in_progress_mtx_);
+    if (!cancellation_in_progress_) {
+      cancellation_in_progress_ = true;
+      handle_cancel = true;
+    }
+  }
+
+  // Handle the cancellation.
+  if (handle_cancel) {
     // Cancel any queued tasks.
     thread_pool_->cancel_all_tasks();
     vfs_->cancel_all_tasks();
@@ -430,8 +440,11 @@ Status StorageManager::cancel_all_tasks() {
     // Wait for in-progress queries to finish.
     wait_for_zero_in_progress();
 
+    // Reset the cancellation flag.
+    std::unique_lock<std::mutex> lck(cancellation_in_progress_mtx_);
     cancellation_in_progress_ = false;
   }
+
   return Status::Ok();
 }
 
