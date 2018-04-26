@@ -68,9 +68,6 @@ class Watchdog {
   static void watchdog_thread(Watchdog* watchdog);
 };
 
-/** Singleton Watchdog instance. */
-extern Watchdog globalWatchdog;
-
 }  // namespace global_state
 }  // namespace sm
 }  // namespace tiledb

@@ -65,12 +65,6 @@ class SignalHandlers {
   static void safe_stderr(const char* msg, size_t msg_len);
 };
 
-/** Singleton SignalHandlers instance. */
-extern SignalHandlers globalSignalHandlers;
-
-/** Global signalling flag. */
-extern std::atomic_bool signal_received;
-
 }  // namespace global_state
 }  // namespace sm
 }  // namespace tiledb
