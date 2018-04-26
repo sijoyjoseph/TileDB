@@ -52,6 +52,14 @@ namespace global_state {
 /*          Global variables         */
 /* ********************************* */
 
+/**
+ * Singleton SignalHandlers instance.
+ *
+ * Note: because TileDB's test executable is linked both against the TileDB
+ * dynamic object and the core object files themselves, we can have two copies
+ * of static globals. This is not necessarily a problem, just something to
+ * remember.
+ */
 SignalHandlers globalSignalHandlers;
 
 std::atomic_bool signal_received(false);

@@ -16,7 +16,14 @@ namespace tiledb {
 namespace sm {
 namespace global_state {
 
-/** Singleton Watchdog instance. */
+/**
+ * Singleton Watchdog instance.
+ *
+ * Note: because TileDB's test executable is linked both against the TileDB
+ * dynamic object and the core object files themselves, we can have two copies
+ * of static globals. This is not necessarily a problem, just something to
+ * remember.
+ */
 Watchdog globalWatchdog;
 
 Watchdog::Watchdog() {
