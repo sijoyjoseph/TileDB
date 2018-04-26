@@ -645,7 +645,8 @@ TEST_CASE_METHOD(
   remove_sparse_array();
 }
 
-TEST_CASE_METHOD(AsyncFx, "C API: Test async cancellation", "[capi], [async]") {
+TEST_CASE_METHOD(
+    AsyncFx, "C API: Test async cancellation", "[capi], [async], [cancel]") {
   remove_sparse_array();
   create_sparse_array();
   write_sparse_async_cancelled();

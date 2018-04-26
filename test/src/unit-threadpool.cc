@@ -100,7 +100,8 @@ TEST_CASE("ThreadPool: Test no wait", "[threadpool]") {
   }
 }
 
-TEST_CASE("ThreadPool: Test pending task cancellation", "[threadpool]") {
+TEST_CASE(
+    "ThreadPool: Test pending task cancellation", "[threadpool], [cancel]") {
   SECTION("- No cancellation callback") {
     ThreadPool pool(2);
     std::atomic<int> result(0);
