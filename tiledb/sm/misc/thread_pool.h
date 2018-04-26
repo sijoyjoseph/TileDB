@@ -74,6 +74,18 @@ class ThreadPool {
    */
   std::future<Status> enqueue(const std::function<Status()>& function);
 
+  /**
+   * Enqueue a new task to be executed by a thread with a custom callback
+   * made if the task is cancelled before it can execute.
+   *
+   * @param function Task function to execute.
+   * @param on_cancel Cancellation callback function to make on cancel.
+   * @return Future for the return value of the task.
+   */
+  std::future<Status> enqueue(
+      const std::function<Status()>& function,
+      const std::function<void()>& on_cancel);
+
   /** Return the number of threads in this pool. */
   uint64_t num_threads() const;
 

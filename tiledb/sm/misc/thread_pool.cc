@@ -77,13 +77,21 @@ void ThreadPool::cancel_all_tasks() {
 
 std::future<Status> ThreadPool::enqueue(
     const std::function<Status()>& function) {
-  std::packaged_task<Status(bool)> task([function](bool should_cancel) {
-    if (should_cancel) {
-      return Status::Error("Task cancelled before execution.");
-    } else {
-      return function();
-    }
-  });
+  return enqueue(function, []() {});
+}
+
+std::future<Status> ThreadPool::enqueue(
+    const std::function<Status()>& function,
+    const std::function<void()>& on_cancel) {
+  std::packaged_task<Status(bool)> task(
+      [function, on_cancel](bool should_cancel) {
+        if (should_cancel) {
+          on_cancel();
+          return Status::Error("Task cancelled before execution.");
+        } else {
+          return function();
+        }
+      });
   auto future = task.get_future();
 
   {
