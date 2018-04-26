@@ -207,6 +207,9 @@ class StorageManager {
   /** Cancels all background tasks. */
   Status cancel_all_tasks();
 
+  /** Returns true while all tasks are being cancelled. */
+  bool cancellation_in_progress() const;
+
   /** Returns the configuration parameters. */
   Config config() const;
 
@@ -215,6 +218,9 @@ class StorageManager {
 
   /** Creates an empty file with the input URI. */
   Status touch(const URI& uri);
+
+  /** Decrement the count of in-progress queries. */
+  void decrement_in_progress();
 
   /** Deletes a fragment directory. */
   Status delete_fragment(const URI& uri) const;
@@ -234,6 +240,9 @@ class StorageManager {
    * @return Status
    */
   Status init(Config* config);
+
+  /** Increment the count of in-progress queries. */
+  void increment_in_progress();
 
   /**
    * Checks if the input URI represents an array.
@@ -517,6 +526,9 @@ class StorageManager {
   /** Returns the virtual filesystem object. */
   VFS* vfs() const;
 
+  /** Block until there are zero in-progress queries. */
+  void wait_for_zero_in_progress();
+
   /**
    * Writes the contents of a buffer into the cache. `uri` and `offset`
    * collectively form the key of the object to be cached. Essentially, this is
@@ -548,6 +560,9 @@ class StorageManager {
   /** An array schema cache. */
   LRUCache* array_schema_cache_;
 
+  /** Set to true when tasks are being cancelled. */
+  std::atomic_bool cancellation_in_progress_;
+
   /** Mutex for providing thread-safety upon creating TileDB objects. */
   std::mutex object_create_mtx_;
 
@@ -577,6 +592,15 @@ class StorageManager {
    * initialized via *query_init* for a particular array.
    */
   std::map<std::string, OpenArray*> open_arrays_;
+
+  /** Count of the number of queries currently in progress. */
+  uint64_t queries_in_progress_;
+
+  /** Guards queries_in_progress_ counter. */
+  std::mutex queries_in_progress_mtx_;
+
+  /** Guards queries_in_progress_ counter. */
+  std::condition_variable queries_in_progress_cv_;
 
   /** The storage manager's thread pool. */
   std::unique_ptr<ThreadPool> thread_pool_;

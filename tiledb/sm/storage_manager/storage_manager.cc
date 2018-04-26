@@ -60,6 +60,8 @@ StorageManager::StorageManager() {
   fragment_metadata_cache_ = nullptr;
   tile_cache_ = nullptr;
   vfs_ = nullptr;
+  cancellation_in_progress_ = false;
+  queries_in_progress_ = 0;
 }
 
 StorageManager::~StorageManager() {
@@ -419,9 +421,22 @@ Status StorageManager::async_push_query(Query* query) {
 }
 
 Status StorageManager::cancel_all_tasks() {
-  thread_pool_->cancel_all_tasks();
-  vfs_->cancel_all_tasks();
+  if (!cancellation_in_progress_) {
+    cancellation_in_progress_ = true;
+    // Cancel any queued tasks.
+    thread_pool_->cancel_all_tasks();
+    vfs_->cancel_all_tasks();
+
+    // Wait for in-progress queries to finish.
+    wait_for_zero_in_progress();
+
+    cancellation_in_progress_ = false;
+  }
   return Status::Ok();
+}
+
+bool StorageManager::cancellation_in_progress() const {
+  return cancellation_in_progress_;
 }
 
 Config StorageManager::config() const {
@@ -434,6 +449,12 @@ Status StorageManager::create_dir(const URI& uri) {
 
 Status StorageManager::touch(const URI& uri) {
   return vfs_->touch(uri);
+}
+
+void StorageManager::decrement_in_progress() {
+  std::unique_lock<std::mutex> lck(queries_in_progress_mtx_);
+  queries_in_progress_--;
+  queries_in_progress_cv_.notify_all();
 }
 
 Status StorageManager::delete_fragment(const URI& uri) const {
@@ -536,6 +557,12 @@ Status StorageManager::init(Config* config) {
   global_state::GlobalState::GetGlobalState().register_storage_manager(this);
 
   return Status::Ok();
+}
+
+void StorageManager::increment_in_progress() {
+  std::unique_lock<std::mutex> lck(queries_in_progress_mtx_);
+  queries_in_progress_++;
+  queries_in_progress_cv_.notify_all();
 }
 
 Status StorageManager::is_array(const URI& uri, bool* is_array) const {
@@ -1054,6 +1081,12 @@ Status StorageManager::sync(const URI& uri) {
 
 VFS* StorageManager::vfs() const {
   return vfs_;
+}
+
+void StorageManager::wait_for_zero_in_progress() {
+  std::unique_lock<std::mutex> lck(queries_in_progress_mtx_);
+  queries_in_progress_cv_.wait(
+      lck, [this]() { return queries_in_progress_ == 0; });
 }
 
 Status StorageManager::write_to_cache(
