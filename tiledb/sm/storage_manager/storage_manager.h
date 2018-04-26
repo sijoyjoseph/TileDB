@@ -579,7 +579,7 @@ class StorageManager {
   std::map<std::string, OpenArray*> open_arrays_;
 
   /** The storage manager's thread pool. */
-  std::shared_ptr<ThreadPool> thread_pool_;
+  std::unique_ptr<ThreadPool> thread_pool_;
 
   /** A tile cache. */
   LRUCache* tile_cache_;

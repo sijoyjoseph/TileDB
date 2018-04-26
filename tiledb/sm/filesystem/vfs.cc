@@ -175,6 +175,11 @@ Status VFS::touch(const URI& uri) const {
   STATS_FUNC_OUT(vfs_create_file);
 }
 
+Status VFS::cancel_all_tasks() {
+  thread_pool_->cancel_all_tasks();
+  return Status::Ok();
+}
+
 Status VFS::create_bucket(const URI& uri) const {
   STATS_FUNC_IN(vfs_create_bucket);
 
@@ -540,13 +545,16 @@ Status VFS::is_bucket(const URI& uri, bool* is_bucket) const {
   STATS_FUNC_OUT(vfs_is_bucket);
 }
 
-Status VFS::init(
-    const Config::VFSParams& vfs_params,
-    std::shared_ptr<ThreadPool> thread_pool) {
+Status VFS::init(const Config::VFSParams& vfs_params) {
   STATS_FUNC_IN(vfs_init);
 
   vfs_params_ = vfs_params;
-  thread_pool_ = thread_pool;
+
+  thread_pool_ = std::unique_ptr<ThreadPool>(
+      new (std::nothrow) ThreadPool(vfs_params.max_parallel_ops_));
+  if (thread_pool_.get() == nullptr) {
+    return LOG_STATUS(Status::VFSError("Could not allocate VFS thread pool."));
+  }
 
 #ifdef HAVE_HDFS
   hdfs_ = std::unique_ptr<hdfs::HDFS>(new (std::nothrow) hdfs::HDFS());
@@ -572,16 +580,6 @@ Status VFS::init(
   return Status::Ok();
 
   STATS_FUNC_OUT(vfs_init);
-}
-
-Status VFS::init(const Config::VFSParams& vfs_params) {
-  auto thread_pool = std::shared_ptr<ThreadPool>(
-      new (std::nothrow) ThreadPool(vfs_params.max_parallel_ops_));
-  if (thread_pool.get() == nullptr) {
-    return LOG_STATUS(
-        Status::VFSError("Could not allocate private VFS thread pool."));
-  }
-  return init(vfs_params, thread_pool);
 }
 
 Status VFS::ls(const URI& parent, std::vector<URI>* uris) const {

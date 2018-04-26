@@ -412,6 +412,7 @@ Status StorageManager::async_push_query(Query* query) {
 
 Status StorageManager::cancel_all_tasks() {
   thread_pool_->cancel_all_tasks();
+  vfs_->cancel_all_tasks();
   return Status::Ok();
 }
 
@@ -519,10 +520,10 @@ Status StorageManager::init(Config* config) {
   fragment_metadata_cache_ =
       new LRUCache(sm_params.fragment_metadata_cache_size_);
   thread_pool_ =
-      std::shared_ptr<ThreadPool>(new ThreadPool(sm_params.number_of_threads_));
+      std::unique_ptr<ThreadPool>(new ThreadPool(sm_params.number_of_threads_));
   tile_cache_ = new LRUCache(sm_params.tile_cache_size_);
   vfs_ = new VFS();
-  RETURN_NOT_OK(vfs_->init(config_.vfs_params(), thread_pool_));
+  RETURN_NOT_OK(vfs_->init(config_.vfs_params()));
 
   global_state::GlobalState::GetGlobalState().register_storage_manager(this);
 

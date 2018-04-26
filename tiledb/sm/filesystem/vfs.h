@@ -113,6 +113,11 @@ class VFS {
   Status touch(const URI& uri) const;
 
   /**
+   * Cancels all background or queued tasks.
+   */
+  Status cancel_all_tasks();
+
+  /**
    * Creates an object-store bucket.
    *
    * @param uri The name of the bucket to be created.
@@ -222,20 +227,7 @@ class VFS {
   Status is_empty_bucket(const URI& uri, bool* is_empty) const;
 
   /**
-   * Initializes the virtual filesystem with the given configuration and a
-   * shared thread pool.
-   *
-   * @param vfs_params VFS Configuration
-   * @param thread_pool Thread pool to use for VFS tasks.
-   * @return Status
-   */
-  Status init(
-      const Config::VFSParams& vfs_params,
-      std::shared_ptr<ThreadPool> thread_pool);
-
-  /**
-   * Initializes the virtual filesystem with the given configuration and a
-   * private thread pool.
+   * Initializes the virtual filesystem with the given configuration.
    *
    * @param vfs_params VFS Configuration
    * @return Status
@@ -350,7 +342,7 @@ class VFS {
   std::set<Filesystem> supported_fs_;
 
   /** Thread pool for parallel I/O operations. */
-  std::shared_ptr<ThreadPool> thread_pool_;
+  std::unique_ptr<ThreadPool> thread_pool_;
 
   /**
    * Reads from a file by calling the specific backend read function.
