@@ -444,9 +444,10 @@ void AsyncFx::write_sparse_async_cancelled() {
       rc = tiledb_query_get_status(ctx_, query, &status);
       CHECK(rc == TILEDB_OK);
     } while (status != TILEDB_COMPLETED && status != TILEDB_FAILED);
-    CHECK(status == TILEDB_COMPLETED);
-    CHECK(callback_made == 1);
   }
+
+  CHECK(status == TILEDB_COMPLETED);
+  CHECK(callback_made == 1);
 
   // Finalize query
   rc = tiledb_query_finalize(ctx_, query);
