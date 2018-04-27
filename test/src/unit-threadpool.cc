@@ -171,6 +171,15 @@ TEST_CASE(
 
 TEST_CASE("ThreadPool: Too many threads", "[threadpool]") {
   const auto nthreads = 1000 * std::thread::hardware_concurrency();
-  ThreadPool pool;
-  REQUIRE(!pool.init(nthreads).ok());
+  const unsigned max_iters = 100;
+  std::vector<std::unique_ptr<ThreadPool>> pools;
+  bool success = false;
+  for (unsigned i = 0; i < max_iters; i++) {
+    pools.push_back(std::unique_ptr<ThreadPool>(new ThreadPool()));
+    if (!pools.back()->init(nthreads).ok()) {
+      success = true;
+      break;
+    }
+  }
+  REQUIRE(success);
 }

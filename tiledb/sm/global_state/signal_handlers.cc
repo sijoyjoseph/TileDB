@@ -37,8 +37,8 @@
 #include <signal.h>
 
 #ifdef _WIN32
-#include <io.h>
 #include <Windows.h>
+#include <io.h>
 #else
 #include <unistd.h>
 #endif
@@ -106,13 +106,13 @@ static BOOL win_ctrl_handler(DWORD dwCtrlType) {
 Status SignalHandlers::initialize() {
   if (signal(SIGINT, signal_handler) == SIG_ERR) {
     return Status::Error(
-        std::string("Failed to install Win32 SIGINT handler: ") + strerror(errno));
+        std::string("Failed to install Win32 SIGINT handler: ") +
+        strerror(errno));
   }
 
   // Win32 applications should also handle Ctrl-Break.
   if (SetConsoleCtrlHandler(win_ctrl_handler, true) == 0) {
-    return Status::Error(
-        std::string("Failed to install Win32 ctrl handler"));
+    return Status::Error(std::string("Failed to install Win32 ctrl handler"));
   }
   return Status::Ok();
 }
