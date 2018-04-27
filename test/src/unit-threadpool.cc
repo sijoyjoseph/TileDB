@@ -38,7 +38,8 @@ using namespace tiledb::sm;
 
 TEST_CASE("ThreadPool: Test empty", "[threadpool]") {
   for (int i = 0; i < 10; i++) {
-    ThreadPool pool(4);
+    ThreadPool pool;
+    REQUIRE(pool.init(4).ok());
   }
 }
 
@@ -46,6 +47,7 @@ TEST_CASE("ThreadPool: Test single thread", "[threadpool]") {
   int result = 0;
   std::vector<std::future<Status>> results;
   ThreadPool pool;
+  REQUIRE(pool.init().ok());
   for (int i = 0; i < 100; i++) {
     results.push_back(pool.enqueue([&result]() {
       result++;
@@ -59,7 +61,8 @@ TEST_CASE("ThreadPool: Test single thread", "[threadpool]") {
 TEST_CASE("ThreadPool: Test multiple threads", "[threadpool]") {
   std::atomic<int> result(0);
   std::vector<std::future<Status>> results;
-  ThreadPool pool(4);
+  ThreadPool pool;
+  REQUIRE(pool.init(4).ok());
   for (int i = 0; i < 100; i++) {
     results.push_back(pool.enqueue([&result]() {
       result++;
@@ -73,7 +76,8 @@ TEST_CASE("ThreadPool: Test multiple threads", "[threadpool]") {
 TEST_CASE("ThreadPool: Test wait status", "[threadpool]") {
   std::atomic<int> result(0);
   std::vector<std::future<Status>> results;
-  ThreadPool pool(4);
+  ThreadPool pool;
+  REQUIRE(pool.init(4).ok());
   for (int i = 0; i < 100; i++) {
     results.push_back(pool.enqueue([&result, i]() {
       result++;
@@ -86,7 +90,8 @@ TEST_CASE("ThreadPool: Test wait status", "[threadpool]") {
 
 TEST_CASE("ThreadPool: Test no wait", "[threadpool]") {
   {
-    ThreadPool pool(4);
+    ThreadPool pool;
+    REQUIRE(pool.init(4).ok());
     std::atomic<int> result(0);
     for (int i = 0; i < 5; i++) {
       pool.enqueue([&result]() {
@@ -103,7 +108,8 @@ TEST_CASE("ThreadPool: Test no wait", "[threadpool]") {
 TEST_CASE(
     "ThreadPool: Test pending task cancellation", "[threadpool], [cancel]") {
   SECTION("- No cancellation callback") {
-    ThreadPool pool(2);
+    ThreadPool pool;
+    REQUIRE(pool.init(2).ok());
     std::atomic<int> result(0);
     std::vector<std::future<Status>> tasks;
 
@@ -131,7 +137,8 @@ TEST_CASE(
   }
 
   SECTION("- With cancellation callback") {
-    ThreadPool pool(2);
+    ThreadPool pool;
+    REQUIRE(pool.init(2).ok());
     std::atomic<int> result(0), num_cancelled(0);
     std::vector<std::future<Status>> tasks;
 
@@ -160,4 +167,10 @@ TEST_CASE(
     CHECK(result == num_ok);
     CHECK(num_cancelled == (tasks.size() - num_ok));
   }
+}
+
+TEST_CASE("ThreadPool: Too many threads", "[threadpool]") {
+  const auto nthreads = 1000 * std::thread::hardware_concurrency();
+  ThreadPool pool;
+  REQUIRE(!pool.init(nthreads).ok());
 }

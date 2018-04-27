@@ -36,27 +36,36 @@
 namespace tiledb {
 namespace sm {
 
-ThreadPool::ThreadPool(uint64_t num_threads) {
+ThreadPool::ThreadPool() {
   should_cancel_ = false;
   should_terminate_ = false;
-  for (uint64_t i = 0; i < num_threads; i++) {
-    threads_.emplace_back([this]() { worker(*this); });
-  }
 }
 
 ThreadPool::~ThreadPool() {
-  {
-    std::unique_lock<std::mutex> lck(queue_mutex_);
-    if (!task_queue_.empty()) {
-      LOG_ERROR("Destroying ThreadPool with outstanding tasks.");
+  terminate();
+}
+
+Status ThreadPool::init(uint64_t num_threads) {
+  Status st = Status::Ok();
+
+  for (uint64_t i = 0; i < num_threads; i++) {
+    try {
+      threads_.emplace_back([this]() { worker(*this); });
+    } catch (const std::exception& e) {
+      st = Status::Error(
+          "Error allocating thread pool of " + std::to_string(num_threads) +
+          " threads; " + e.what());
+      LOG_STATUS(st);
+      break;
     }
-    should_terminate_ = true;
-    queue_cv_.notify_all();
   }
 
-  for (auto& t : threads_) {
-    t.join();
+  // Join any created threads on error.
+  if (!st.ok()) {
+    terminate();
   }
+
+  return st;
 }
 
 void ThreadPool::cancel_all_tasks() {
@@ -132,6 +141,23 @@ std::vector<Status> ThreadPool::wait_all_status(
     }
   }
   return statuses;
+}
+
+void ThreadPool::terminate() {
+  {
+    std::unique_lock<std::mutex> lck(queue_mutex_);
+    if (!task_queue_.empty()) {
+      LOG_ERROR("Destroying ThreadPool with outstanding tasks.");
+    }
+    should_terminate_ = true;
+    queue_cv_.notify_all();
+  }
+
+  for (auto& t : threads_) {
+    t.join();
+  }
+
+  threads_.clear();
 }
 
 void ThreadPool::worker(ThreadPool& pool) {

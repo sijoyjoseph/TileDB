@@ -562,7 +562,8 @@ Status StorageManager::init(Config* config) {
   fragment_metadata_cache_ =
       new LRUCache(sm_params.fragment_metadata_cache_size_);
   thread_pool_ =
-      std::unique_ptr<ThreadPool>(new ThreadPool(sm_params.number_of_threads_));
+      std::unique_ptr<ThreadPool>(new ThreadPool());
+  RETURN_NOT_OK(thread_pool_->init(sm_params.number_of_threads_));
   tile_cache_ = new LRUCache(sm_params.tile_cache_size_);
   vfs_ = new VFS();
   RETURN_NOT_OK(vfs_->init(config_.vfs_params()));

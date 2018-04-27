@@ -50,15 +50,19 @@ namespace sm {
  */
 class ThreadPool {
  public:
-  /**
-   * Constructor.
-   *
-   * @param num_threads Number of threads to create (default 1).
-   */
-  explicit ThreadPool(uint64_t num_threads = 1);
+  /** Constructor. */
+  ThreadPool();
 
   /** Destructor. */
   ~ThreadPool();
+
+  /**
+   * Initialize the thread pool.
+   *
+   * @param num_threads Number of threads to create (default 1).
+   * @return Status
+   */
+  Status init(uint64_t num_threads = 1);
 
   /**
    * Cancel all queued tasks, causing them to return error statuses.
@@ -122,6 +126,9 @@ class ThreadPool {
   std::queue<std::packaged_task<Status(bool)>> task_queue_;
 
   std::vector<std::thread> threads_;
+
+  /** Terminate the threads in the thread pool. */
+  void terminate();
 
   static void worker(ThreadPool& pool);
 };
