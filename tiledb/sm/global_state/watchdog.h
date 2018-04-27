@@ -35,6 +35,8 @@
 
 #include <thread>
 
+#include "tiledb/sm/misc/status.h"
+
 namespace tiledb {
 namespace sm {
 namespace global_state {
@@ -45,11 +47,20 @@ namespace global_state {
  */
 class Watchdog {
  public:
-  /** Constructor. */
-  Watchdog();
+  Watchdog(const Watchdog&) = delete;
+  Watchdog(const Watchdog&&) = delete;
+  Watchdog& operator=(const Watchdog&) = delete;
+  Watchdog& operator=(const Watchdog&&) = delete;
 
-  /** Destructor. */
-  ~Watchdog();
+  /** Returns a reference to the singleton Watchdog instance. */
+  static Watchdog& GetWatchdog();
+
+  /**
+   * Initializes the Watchdog thread.
+   *
+   * @return Status
+   */
+  Status initialize();
 
  private:
   /** Condition variable for coordinating with the watchdog thread. */
@@ -63,6 +74,12 @@ class Watchdog {
 
   /** Watchdog thread handle. */
   std::thread thread_;
+
+  /** Constructor. */
+  Watchdog();
+
+  /** Destructor. */
+  ~Watchdog();
 
   /** Watchdog thread function. */
   static void watchdog_thread(Watchdog* watchdog);

@@ -35,6 +35,8 @@
 
 #include <atomic>
 
+#include "tiledb/sm/misc/status.h"
+
 namespace tiledb {
 namespace sm {
 namespace global_state {
@@ -44,8 +46,20 @@ namespace global_state {
  */
 class SignalHandlers {
  public:
-  /** Constructor. */
-  SignalHandlers();
+  SignalHandlers(const SignalHandlers&) = delete;
+  SignalHandlers(const SignalHandlers&&) = delete;
+  SignalHandlers& operator=(const SignalHandlers&) = delete;
+  SignalHandlers& operator=(const SignalHandlers&&) = delete;
+
+  /** Returns a reference to the singleton SignalHandlers instance. */
+  static SignalHandlers& GetSignalHandlers();
+
+  /**
+   * Initialize the signal handlers.
+   *
+   * @return Status
+   */
+  Status initialize();
 
   /**
    * Returns true if a signal has been received. This will only return true on
@@ -63,6 +77,10 @@ class SignalHandlers {
    * @param msg_len Number of chars in message
    */
   static void safe_stderr(const char* msg, size_t msg_len);
+
+ private:
+  /** Constructor. */
+  SignalHandlers(){};
 };
 
 }  // namespace global_state

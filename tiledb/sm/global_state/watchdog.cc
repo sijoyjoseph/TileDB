@@ -1,6 +1,6 @@
+#include "tiledb/sm/global_state/watchdog.h"
 #include "tiledb/sm/global_state/global_state.h"
 #include "tiledb/sm/global_state/signal_handlers.h"
-#include "tiledb/sm/global_state/watchdog.h"
 #include "tiledb/sm/misc/constants.h"
 #include "tiledb/sm/misc/logger.h"
 
@@ -8,19 +8,14 @@ namespace tiledb {
 namespace sm {
 namespace global_state {
 
-/**
- * Singleton Watchdog instance.
- *
- * Note: because TileDB's test executable is linked both against the TileDB
- * dynamic object and the core object files themselves, we can have two copies
- * of static globals. This is not necessarily a problem, just something to
- * remember.
- */
-Watchdog globalWatchdog;
+Watchdog& Watchdog::GetWatchdog() {
+  // This is thread-safe in C++11.
+  static Watchdog watchdog;
+  return watchdog;
+}
 
 Watchdog::Watchdog() {
   should_exit_ = false;
-  thread_ = std::thread([this]() { watchdog_thread(this); });
 }
 
 Watchdog::~Watchdog() {
@@ -30,6 +25,16 @@ Watchdog::~Watchdog() {
     cv_.notify_one();
   }
   thread_.join();
+}
+
+Status Watchdog::initialize() {
+  try {
+    thread_ = std::thread([this]() { watchdog_thread(this); });
+  } catch (const std::exception& e) {
+    return Status::Error(
+        std::string("Could not initialize watchdog thread; ") + e.what());
+  }
+  return Status::Ok();
 }
 
 void Watchdog::watchdog_thread(Watchdog* watchdog) {

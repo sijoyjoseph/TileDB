@@ -567,7 +567,9 @@ Status StorageManager::init(Config* config) {
   vfs_ = new VFS();
   RETURN_NOT_OK(vfs_->init(config_.vfs_params()));
 
-  global_state::GlobalState::GetGlobalState().register_storage_manager(this);
+  auto& global_state = global_state::GlobalState::GetGlobalState();
+  RETURN_NOT_OK(global_state.initialize());
+  global_state.register_storage_manager(this);
 
   return Status::Ok();
 }

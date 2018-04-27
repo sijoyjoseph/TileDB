@@ -53,20 +53,21 @@ namespace global_state {
 /* ********************************* */
 
 /**
- * Singleton SignalHandlers instance.
- *
- * Note: because TileDB's test executable is linked both against the TileDB
- * dynamic object and the core object files themselves, we can have two copies
- * of static globals. This is not necessarily a problem, just something to
- * remember.
+ * Flag set to true from the installed signal handlers. This is a global
+ * variable in the interest of being paranoid about what can be modified safely
+ * from a signal handler.
  */
-SignalHandlers globalSignalHandlers;
-
 std::atomic_bool signal_received(false);
 
 /* ********************************* */
 /*     Platform-neutral functions    */
 /* ********************************* */
+
+SignalHandlers& SignalHandlers::GetSignalHandlers() {
+  // This is thread-safe in C++11.
+  static SignalHandlers signalHandlers;
+  return signalHandlers;
+}
 
 bool SignalHandlers::signal_received() {
   bool test = true;
@@ -96,7 +97,7 @@ static void signal_handler(int signum) {
   }
 }
 
-SignalHandlers::SignalHandlers() {
+Status SignalHandlers::initialize() {
   struct sigaction action;
   sigemptyset(&action.sa_mask);
   // Block additional SIGINTs while in the SIGINT handler:
@@ -104,9 +105,10 @@ SignalHandlers::SignalHandlers() {
   action.sa_flags = 0;
   action.sa_handler = signal_handler;
   if (sigaction(SIGINT, &action, NULL) != 0) {
-    LOG_ERROR(
+    return Status::Error(
         std::string("Failed to install SIGINT handler: ") + strerror(errno));
   }
+  return Status::Ok();
 }
 
 void SignalHandlers::safe_stderr(const char* msg, size_t msg_len) {

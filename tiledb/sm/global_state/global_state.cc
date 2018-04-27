@@ -31,6 +31,8 @@
  */
 
 #include "tiledb/sm/global_state/global_state.h"
+#include "tiledb/sm/global_state/signal_handlers.h"
+#include "tiledb/sm/global_state/watchdog.h"
 
 namespace tiledb {
 namespace sm {
@@ -43,6 +45,17 @@ GlobalState& GlobalState::GetGlobalState() {
 }
 
 GlobalState::GlobalState() {
+  initialized_ = false;
+}
+
+Status GlobalState::initialize() {
+  std::unique_lock<std::mutex> lck(init_mtx_);
+  if (!initialized_) {
+    RETURN_NOT_OK(SignalHandlers::GetSignalHandlers().initialize());
+    RETURN_NOT_OK(Watchdog::GetWatchdog().initialize());
+    initialized_ = true;
+  }
+  return Status::Ok();
 }
 
 void GlobalState::register_storage_manager(StorageManager* sm) {

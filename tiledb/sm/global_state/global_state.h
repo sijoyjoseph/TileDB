@@ -46,9 +46,20 @@ namespace global_state {
  */
 class GlobalState {
  public:
-  /**
-   * Returns a reference to the singleton GlobalState instance. */
+  GlobalState(const GlobalState&) = delete;
+  GlobalState(const GlobalState&&) = delete;
+  GlobalState& operator=(const GlobalState&) = delete;
+  GlobalState& operator=(const GlobalState&&) = delete;
+
+  /** Returns a reference to the singleton GlobalState instance. */
   static GlobalState& GetGlobalState();
+
+  /**
+   * Initializes all TileDB global state in an idempotent and threadsafe way.
+   *
+   * @return Status
+   */
+  Status initialize();
 
   /**
    * Register the given StorageManger instance.
@@ -68,6 +79,12 @@ class GlobalState {
   std::set<StorageManager*> storage_managers();
 
  private:
+  /** True if global state has been initialized. */
+  bool initialized_;
+
+  /** Protects the initialized flag. */
+  std::mutex init_mtx_;
+
   /** Set of currently active StorageManager instances. */
   std::set<StorageManager*> storage_managers_;
 
