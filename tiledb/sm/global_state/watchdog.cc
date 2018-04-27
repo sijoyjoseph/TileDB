@@ -1,12 +1,4 @@
-#include <signal.h>
-#include <tiledb/sm/misc/constants.h>
-#include <unistd.h>
-#include <atomic>
-#include <iostream>
-#include <mutex>
-#include <string>
-
-#include "global_state.h"
+#include "tiledb/sm/global_state/global_state.h"
 #include "tiledb/sm/global_state/signal_handlers.h"
 #include "tiledb/sm/global_state/watchdog.h"
 #include "tiledb/sm/misc/constants.h"
