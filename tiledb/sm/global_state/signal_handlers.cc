@@ -34,10 +34,11 @@
 #include <mutex>
 #include <string>
 
-#ifdef _WIN32
-#error "Signal handling unimplemented on Windows"
-#else
 #include <signal.h>
+
+#ifdef _WIN32
+#include <io.h>
+#else
 #include <unistd.h>
 #endif
 
@@ -75,16 +76,6 @@ bool SignalHandlers::signal_received() {
       test, false);
 }
 
-#ifdef _WIN32
-/* ********************************* */
-/*       Win32 implementations       */
-/* ********************************* */
-#error "Signal handling unimplemented on Windows"
-#else
-/* ********************************* */
-/*       POSIX implementations       */
-/* ********************************* */
-
 /**
  * Signal handler function.
  * @param signum Signal number being handled.
@@ -96,6 +87,32 @@ static void signal_handler(int signum) {
       break;
   }
 }
+
+#ifdef _WIN32
+/* ********************************* */
+/*       Win32 implementations       */
+/* ********************************* */
+
+Status SignalHandlers::initialize() {
+  if (signal(SIGINT, signal_handler) == SIG_ERR) {
+    return Status::Error(
+        std::string("Failed to install SIGINT handler: ") + strerror(errno));
+  }
+
+  // Win32 applications should also handle Ctrl-C and Ctrl-Break.
+  return Status::Ok();
+}
+
+void SignalHandlers::safe_stderr(const char* msg, size_t msg_len) {
+  auto retval = _write(2, msg, (unsigned int)msg_len);
+  // Ignore return value.
+  (void)retval;
+}
+
+#else
+/* ********************************* */
+/*       POSIX implementations       */
+/* ********************************* */
 
 Status SignalHandlers::initialize() {
   struct sigaction action;

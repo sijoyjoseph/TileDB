@@ -33,6 +33,8 @@
 #ifndef TILEDB_WATCHDOG_H
 #define TILEDB_WATCHDOG_H
 
+#include <condition_variable>
+#include <mutex>
 #include <thread>
 
 #include "tiledb/sm/misc/status.h"
